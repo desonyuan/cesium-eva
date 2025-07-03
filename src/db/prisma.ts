@@ -1,4 +1,5 @@
-import { PrismaClient, PrismaPromise } from "../generated/prisma";
+import { PrismaClient,PrismaPromise } from "@prisma/client";
+
 
 
 export const $db = new PrismaClient({

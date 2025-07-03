@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../constant';
 
-const JWT_SECRET = process.env.JWT_SECRET!; // 请替换为你的密钥
 
 // 生成JWT
 export function signJwt(payload: Record<string,any>, expiresIn = '24h'): string {
