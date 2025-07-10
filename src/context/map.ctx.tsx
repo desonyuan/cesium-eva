@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { GoogleMap, InfoWindow, LoadScript, Marker, GroundOverlay, Polygon } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, LoadScript, Marker, GroundOverlay, Polyline } from "@react-google-maps/api";
 import { Button, Popconfirm, Table } from "antd";
 import { useBoolean } from "ahooks";
 import { Actions } from "ahooks/lib/useBoolean";
@@ -150,7 +150,7 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
     return null;
   }, [overlayData]);
 
-  const polygon = useMemo(() => {
+  const polyline = useMemo(() => {
     if (!route) {
       return null;
     }
@@ -163,13 +163,13 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
           icon={{ url: "/user.png", scaledSize: new window.google.maps.Size(42, 42) }}
           position={{ lat: route.start[0], lng: route.start[1] }}
         /> */}
-        <Polygon
+        <Polyline
           options={{
             strokeColor: "#FF0000",
             // fillOpacity: 0.5,
             strokeWeight: 2,
           }}
-          paths={path}
+          path={path}
         />
       </>
     );
@@ -276,7 +276,7 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
           {Info}
           {ClosureInfo}
           {overlay}
-          {polygon}
+          {polyline}
         </GoogleMap>
       </LoadScript>
       {children}

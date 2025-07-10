@@ -34,14 +34,14 @@ def edge_penalized_weight(curr_attr, prev_attr, curr_node=None, prev_node=None, 
     nm_p  = prev_attr.get("road_name", "")
     hi_p  = is_hiway(rt_p, nm_p)
     link_p= IS_LINK(rt_p)
-    
+
     # sea-to-sky highway specific restriction
     sea_in  = any(k in nm_c for k in SEA2SKY)
     sea_out = any(k in nm_p for k in SEA2SKY)
     if sea_in ^ sea_out: # if *_link to sea-to-sky highway, then set the forbidden restriction
         if not (IS_LINK(rt_c) or IS_LINK(rt_p)):
             return INF
-    
+
     if hi_c and not (hi_p or link_p):
         return curr_attr["weight"] * 20
     if hi_p and not (hi_c or link_c):
@@ -51,7 +51,7 @@ def edge_penalized_weight(curr_attr, prev_attr, curr_node=None, prev_node=None, 
         v1 = (prev_node[0]-prev_prev_node[0], prev_node[1]-prev_prev_node[1])
         v2 = (curr_node[0]-prev_node[0], curr_node[1]-prev_node[1])
         # compute the angle (via cosine)
-        dot  = v1[0]*v2[0] + v1[1]*v2[1] 
+        dot  = v1[0]*v2[0] + v1[1]*v2[1]
         norm = ((v1[0]**2+v1[1]**2)**0.5 * (v2[0]**2+v2[1]**2)**0.5)
         if norm > 0 and dot/norm < -0.9: # angle > ~155° (≈ U-turn)
             # if the turn happens on a trunk/motorway → forbid it outright, on ordinary roads we just give it a heavy penalty
@@ -83,7 +83,7 @@ def build_graph(edges: gpd.GeoDataFrame, fire_union, alpha: float) -> nx.Graph:
             link_eps.add(tuple(pts[-1]))
     for _, row in edges.iterrows():
         # if it's motorway or trunk
-        # and end not in link_eps, get over it  
+        # and end not in link_eps, get over it
         rt = row.get("road_type","")
         a = tuple(row.geometry.coords[0])
         b = tuple(row.geometry.coords[-1])
@@ -126,7 +126,7 @@ def nearest_node(pt: Point, nodes: list[tuple]) -> tuple:
     min_d, closest = float("inf"), None
     x0, y0 = pt.x, pt.y
     for node in nodes:
-        x, y = node[0], node[1]    # only consider the first two 
+        x, y = node[0], node[1]    # only consider the first two
         d = (x - x0) ** 2 + (y - y0) ** 2
         if d < min_d:
             min_d, closest = d, node
@@ -140,7 +140,7 @@ def constrained_shortest_path(G: nx.DiGraph, source, target):
     counter = itertools.count()
     pq   = [(0.0, next(counter), source,  None,     None,     None)]
     dist = {source: 0.0}
-    parent = {} # node to parent 
+    parent = {} # node to parent
 
     while pq:
         du, _, u, prev_node, prev_prev, attr_u = heapq.heappop(pq)
@@ -149,7 +149,7 @@ def constrained_shortest_path(G: nx.DiGraph, source, target):
         if du != dist[u]:
             continue
 
-        # DiGraph  
+        # DiGraph
         for _, v, attr in G.out_edges(u, data=True):
             w = edge_penalized_weight(
                     attr,           # curr_attr
