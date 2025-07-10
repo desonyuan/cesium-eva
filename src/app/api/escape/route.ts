@@ -17,12 +17,8 @@ export const POST = async (req: Request) => {
     });
   });
 
-  console.log(geojson);
-
-  const str = geojson.replace(/\(([^,]+), ([^,]+)\)/g, "[$1, $2]").replace(/[']/g, '"');
-
   return NextResponse.json({
-    data: JSON.parse(str),
+    data: JSON.parse(geojson),
     statusCode: 200,
   });
 };
