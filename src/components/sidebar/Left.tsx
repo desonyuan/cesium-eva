@@ -117,11 +117,11 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
               <Button type={closureMode ? "primary" : "default"} onClick={() => setClosureMode.toggle()}>
                 {closureMode ? "Done" : "Set closure"}
               </Button>
-              <Button type="primary" onClick={setIsModalOpen.setTrue}>
-                Planning the path
-              </Button>
             </>
           )}
+          <Button type="primary" onClick={setIsModalOpen.setTrue}>
+            Planning the path
+          </Button>
         </div>
       </Card>
       <Modal
