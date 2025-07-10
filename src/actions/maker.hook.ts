@@ -1,12 +1,15 @@
+import { useRequest } from "ahooks";
+import { RoadClosure, User } from "@prisma/client";
 
-import { useRequest } from 'ahooks';
-import { API } from '../utils/http';
+import { API } from "../utils/http";
 
 export type FirePoint = {
   lat: number;
   lng: number;
   raw: IRow;
 };
+
+export type IRoadClosure = RoadClosure & { User: User };
 interface IRow {
   name: string;
   date: string;
@@ -25,12 +28,45 @@ interface IRow {
   viirs: string;
   wfigs: string;
   firis: string;
-  'fireguard ': string;
+  "fireguard ": string;
 }
 
 export const useMapMarkers = () => {
-  const {data} = useRequest(() => {
-      return API.get<FirePoint[]>("/fires")
+  const { data } = useRequest(() => {
+    return API.get<FirePoint[]>("/fires");
   });
-  return {markers: data || []};
+
+  return { markers: data || [] };
+};
+
+export const useClosureMarkers = () => {
+  const {
+    data,
+    run: getRoadClosure,
+    loading: getLoading,
+  } = useRequest(() => {
+    return API.get<IRoadClosure[]>("/closure");
+  });
+
+  const { run: createClosure, loading: createLoading } = useRequest(
+    (body: any) => {
+      return API.post<RoadClosure>("/closure", { data: body });
+    },
+    {
+      manual: true,
+      onSuccess: getRoadClosure,
+    },
+  );
+
+  const { runAsync: delClosure } = useRequest(
+    (id: number) => {
+      return API.delete<RoadClosure>("/closure", { data: { id } });
+    },
+    {
+      manual: true,
+      onSuccess: getRoadClosure,
+    },
+  );
+
+  return { closureData: data || [], createClosure, getLoading, createLoading, delClosure };
 };

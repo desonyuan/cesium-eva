@@ -2,7 +2,8 @@ import "@/styles/globals.css";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import clsx from "clsx";
 import { Metadata, Viewport } from "next";
-import '@ant-design/v5-patch-for-react-19';
+
+import "@ant-design/v5-patch-for-react-19";
 import { Providers } from "../context/providers";
 
 import { siteConfig } from "@/config/site";
@@ -25,18 +26,12 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html suppressHydrationWarning lang="zh-cn">
       <head />
-      <body className={clsx("bg-background")}>
-        <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
-          {children}
-        </Providers>
+      <body className={clsx("bg-background h-screen")}>
+        <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>{children}</Providers>
       </body>
     </html>
   );

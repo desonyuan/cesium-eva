@@ -1,8 +1,9 @@
-import { message } from 'antd';
-import { ModernFetch } from 'modern-fetch';
-import { getToken, setToken } from './token';
-const BaseUrl = '/';
-const prefix = 'api';
+import { message } from "antd";
+import { ModernFetch } from "modern-fetch";
+
+import { getToken, setToken } from "./token";
+const BaseUrl = "/";
+const prefix = "api";
 
 // const RefreshToken = async () => {
 //   const accessToken = await getAccessToken();
@@ -39,35 +40,39 @@ const ApiInstance = new ModernFetch({
 
 ApiInstance.addReqIntcp(async (config) => {
   const token = await getToken();
+
   if (token) {
-    config.headers.set('authorization', token);
+    config.headers.set("authorization", token);
   }
+
   return config;
 });
 // 响应拦截器
 ApiInstance.addResIntcp(async (response, responseTyepe, retry) => {
   if (response.ok) {
     const status = response.status;
+
     // 请求成功
     if (status === 200) {
-      const _token = response.headers.get('authorization');
-      console.log(_token,'_token_token_token');
+      const _token = response.headers.get("authorization");
 
       if (_token) {
         setToken(_token);
       }
-      if (responseTyepe === 'text') {
+      if (responseTyepe === "text") {
         return await response.text();
       } else if (responseTyepe === "arrayBuffer") {
         return await response.arrayBuffer();
       }
       const json = await response.json();
       const statusCode = json.statusCode;
+
       switch (statusCode) {
         case 200:
           return json.data;
         case 401:
-          message.error('Unauthorized access');
+          message.error("Unauthorized access");
+
           //退出当前登录的账号
           // await Logout();
           return Promise.reject();
@@ -83,6 +88,7 @@ ApiInstance.addResIntcp(async (response, responseTyepe, retry) => {
         // return Promise.reject(json.message);
         default:
           message.error(json.message);
+
           return Promise.reject(json.message);
       }
     } else if (status > 200 && status < 300) {
@@ -95,7 +101,8 @@ ApiInstance.addResIntcp(async (response, responseTyepe, retry) => {
   }
 });
 // 添加错误拦截器
-ApiInstance.addErrIntcp(async (err) => { });
-const reqPublic = ApiInstance.create('');
-const API = ApiInstance.create('/api');
+ApiInstance.addErrIntcp(async (err) => {});
+const reqPublic = ApiInstance.create("");
+const API = ApiInstance.create("/api");
+
 export { reqPublic, API };

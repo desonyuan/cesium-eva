@@ -1,14 +1,14 @@
-import { FirePoint } from "@/src/actions/maker.hook";
-import { FIRES_URL } from "@/src/constant";
-import axios from 'axios';
+import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
-import Papa from 'papaparse';
+import Papa from "papaparse";
+
+import { FIRES_URL } from "@/src/constant";
+import { FirePoint } from "@/src/actions/maker.hook";
 
 export const GET = async (req: NextRequest) => {
-
-  const res = await axios.get(FIRES_URL)
-  const text = res.data as string
-  const markers = await new Promise((resolve, reject) => {
+  const res = await axios.get(FIRES_URL);
+  const text = res.data as string;
+  const markers = await new Promise((resolve) => {
     Papa.parse(text, {
       header: true,
       skipEmptyLines: true,
@@ -20,11 +20,11 @@ export const GET = async (req: NextRequest) => {
             raw: row,
           };
         });
+
         resolve(parsed);
       },
-
     });
-  })
+  });
 
-  return NextResponse.json({ data: markers, statusCode: 200 })
-}
+  return NextResponse.json({ data: markers, statusCode: 200 });
+};

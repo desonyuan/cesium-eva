@@ -1,17 +1,17 @@
-'use client'
+"use client";
 
 const { parse, stringify } = JSON;
 
 class LocalStore {
   private store!: Storage;
-  type: 'session' | 'local';
-  constructor(type: 'session' | 'local') {
+  type: "session" | "local";
+  constructor(type: "session" | "local") {
     this.type = type;
   }
-  init(){
-    if(this.store) return;
+  init() {
+    if (this.store) return;
 
-    if (this.type == 'local') {
+    if (this.type == "local") {
       this.store = window.localStorage;
     } else {
       this.store = window.sessionStorage;
@@ -19,7 +19,7 @@ class LocalStore {
   }
 
   set(key: string, value: any) {
-    this.init()
+    this.init();
     try {
       this.store.setItem(key, stringify(value));
     } catch (error) {
@@ -27,8 +27,9 @@ class LocalStore {
     }
   }
   get(key: string) {
-     this.init()
+    this.init();
     const data = this.store.getItem(key);
+
     return data ? parse(data) : data;
   }
   remove(key: string): void {
@@ -39,5 +40,5 @@ class LocalStore {
   }
 }
 
-export const localStore = new LocalStore('local');
-export const sessionStore = new LocalStore('session');
+export const localStore = new LocalStore("local");
+export const sessionStore = new LocalStore("session");

@@ -1,76 +1,71 @@
+import { fromArrayBuffer } from "geotiff";
+import sharp from "sharp";
 
-import { fromUrl,fromArrayBuffer } from 'geotiff';
-import proj4 from 'proj4';
-import sharp from 'sharp';
-
-export async function convertTiffToPng(buf: ArrayBuffer) {
+export async function convertTiffToPng(buf: ArrayBuffer, centerLat: number, centerLng: number) {
   const tiff = await fromArrayBuffer(buf);
   const image = await tiff.getImage();
-  const bbox = image.getBoundingBox();
-  // 获取影像数据
+  const [pixelWidth, pixelHeight] = image.getResolution();
   const width = image.getWidth();
   const height = image.getHeight();
-  // 获取空间信息
-  const tiepoint = image.getTiePoints()[0];
-  const scale = image.getFileDirectory().ModelPixelScale;
 
-  const originX = tiepoint.x;
-  const originY = tiepoint.y;
-  const scaleX = scale[0];
-  const scaleY = scale[1];
+  // 计算总米数
+  const totalWidthMeters = width * Math.abs(pixelWidth);
+  const totalHeightMeters = height * Math.abs(pixelHeight);
 
-  const minX = originX;
-  const maxY = originY;
-  const maxX = originX + width * scaleX;
-  const minY = originY - height * scaleY;
+  // 米转度
+  const latSpan = totalHeightMeters / 111000;
+  const lngSpan = totalWidthMeters / (111000 * Math.cos((centerLat * Math.PI) / 180));
 
-  const EPSG = `EPSG:${image.getGeoKeys().ProjectedCSTypeGeoKey}`;
-  console.log(`📌 投影信息: ${EPSG}`);
+  // 计算边界
+  const rectangle = {
+    north: centerLat + latSpan / 2,
+    south: centerLat - latSpan / 2,
+    east: centerLng + lngSpan / 2,
+    west: centerLng - lngSpan / 2,
+  };
 
-  // 投影转换 EPSG:32612 → EPSG:4326
-  proj4.defs(EPSG, '+proj=utm +zone=12 +datum=WGS84 +units=m +no_defs');
+  console.log("转换后 WGS84 Bounds:", rectangle);
 
-  const toWgs84 = proj4(EPSG, 'EPSG:4326');
-  const [west, south] = toWgs84.forward([minX, minY]);
-  const [east, north] = toWgs84.forward([maxX, maxY]);
+  const raster = (await image.readRasters({ interleave: true })) as any as number[];
 
-  console.log(`📌 地理边界: [${west.toFixed(6)}, ${south.toFixed(6)}] → [${east.toFixed(6)}, ${north.toFixed(6)}]`);
+  const rawData = raster; // 单通道灰度图
 
-  const values = (await image.readRasters({ interleave: true })) as any as number[]; // 单波段 float32
-  // 归一化像素值到 [0,255]
-  let min = Infinity, max = -Infinity;
-  for (const v of values) {
-    if (v === 0 || isNaN(v)) continue;
-    min = Math.min(min, v);
-    max = Math.max(max, v);
+  // 创建 RGBA 图像 Buffer
+  const rgbaBuffer = Buffer.alloc(width * height * 4);
+
+  for (let i = 0; i < width * height; i++) {
+    const value = rawData[i];
+
+    // 设置 RGB
+    rgbaBuffer[i * 4] = value; // R
+    rgbaBuffer[i * 4 + 1] = value; // G
+    rgbaBuffer[i * 4 + 2] = value; // B
+
+    // 如果是黑色或白色，alpha = 0；其他 alpha = 255
+    if (value === 0 || value === 255) {
+      rgbaBuffer[i * 4 + 3] = 0;
+    } else {
+      rgbaBuffer[i * 4 + 3] = 255;
+    }
   }
 
-  const pixels = Buffer.alloc(width * height * 3);
-  for (let i = 0; i < values.length; i++) {
-    const v = values[i];
-    const norm = Math.max(0, Math.min((v - min) / (max - min), 1));
-    const gray = Math.round(norm * 255);
-    pixels[i * 3 + 0] = gray;
-    pixels[i * 3 + 1] = gray;
-    pixels[i * 3 + 2] = gray;
-  }
-  const rectangle = { west, south, east, north };
-
-  const buffer = await sharp(buf, {
-    // raw: {
-    //   width,
-    //   height,
-    //   channels: 3
-    // }
+  // 保存为 PNG
+  const buffer = await sharp(rgbaBuffer, {
+    raw: {
+      width,
+      height,
+      channels: 4,
+    },
   })
     .png()
     .toBuffer();
 
-  console.log('✅ 转换完成：');
+  console.log("✅ 转换完成：");
+
   return {
     rectangle,
     buffer,
     width,
-    height
-  }
+    height,
+  };
 }

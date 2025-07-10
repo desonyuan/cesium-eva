@@ -2,22 +2,36 @@
 
 import type { ThemeProviderProps } from "next-themes";
 
-import { AntdRegistry } from '@ant-design/nextjs-registry';
-import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { AntdRegistry } from "@ant-design/nextjs-registry";
+import { ConfigProvider } from "antd";
 import * as React from "react";
-import { ConfigProvider, theme } from "antd";
+import { useRequest } from "ahooks";
+import { User } from "@prisma/client";
+
+import { API } from "../utils/http";
+import { useUser } from "../hooks/useUser";
 
 export interface ProvidersProps {
-  children: React.ReactNode;
   themeProps?: ThemeProviderProps;
 }
 
+export const Providers: React.FC<React.PropsWithChildren<ProvidersProps>> = ({ children, themeProps }) => {
+  const { setUserInfo } = useUser();
 
+  useRequest(
+    () => {
+      return API.get<User>("/auth/check");
+    },
+    {
+      onSuccess: (data) => {
+        setUserInfo(data);
+      },
+    },
+  );
 
-export function Providers({ children, themeProps }: ProvidersProps) {
   return (
     <AntdRegistry>
-      <ConfigProvider theme={{ algorithm: theme.darkAlgorithm }}>{children}</ConfigProvider>
+      <ConfigProvider>{children}</ConfigProvider>
     </AntdRegistry>
   );
-}
+};

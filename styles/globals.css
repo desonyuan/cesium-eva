@@ -1,2 +1,5 @@
-
 @import "tailwindcss";
+
+.gmnoprint {
+  z-index: 999 !important;
+}
