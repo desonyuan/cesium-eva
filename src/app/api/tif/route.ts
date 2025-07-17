@@ -14,12 +14,12 @@ export const GET = async (req: Request) => {
   }
   const url = PYRECAST_BASE_URL + tifUrl;
 
-  const response = await fetch(url);
+  // const response = await fetch(url);
 
-  const arrayBuffer = await response.arrayBuffer();
+  // const arrayBuffer = await response.arrayBuffer();
 
-  console.log("下载成功");
-  const converRes = await convertTiffToPng(arrayBuffer, parseFloat(lat!), parseFloat(lng!));
+  const converRes = await convertTiffToPng(url, parseFloat(lat!), parseFloat(lng!));
+  // const converRes = await transformTiffToPng(arrayBuffer);
 
   return NextResponse.json({
     statusCode: 200,
@@ -28,6 +28,8 @@ export const GET = async (req: Request) => {
       bbox: converRes.rectangle,
       width: converRes.width,
       height: converRes.height,
+      max: converRes.max,
+      min: converRes.min,
     },
   });
 };

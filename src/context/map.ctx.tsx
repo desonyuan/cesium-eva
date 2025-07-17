@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { GoogleMap, InfoWindow, LoadScript, Marker, GroundOverlay, Polyline } from "@react-google-maps/api";
 import { Button, Popconfirm, Table } from "antd";
 import { useBoolean } from "ahooks";
@@ -38,6 +38,8 @@ const containerStyle = {
 
 const MapContext = createContext<MapData | null>(null);
 
+let overlayWindow: google.maps.InfoWindow;
+
 export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const [center, setCenter] = useState({ lat: 47.6062, lng: -122.3321 }); // 美国西雅图坐标
   const { markers } = useMapMarkers();
@@ -49,6 +51,8 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const { createClosure, closureData, createLoading, delClosure } = useClosureMarkers();
   const [currentClosure, setCurrentClosure] = useState<IRoadClosure | null>(null);
   const [route, setRoute] = useState<IRoutePath | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stretchPx, setStretchPx] = useState<number | undefined>();
 
   const onLoad = useCallback((map: google.maps.Map) => {
     // This is just an example of getting and using the map instance!!! don't just blindly copy!
@@ -57,6 +61,16 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
     setMap(map);
     setLoaded.setTrue();
   }, []);
+
+  const canvasSize = useMemo(() => {
+    if (overlayData) {
+      const { width, height } = overlayData;
+
+      return { width, height };
+    }
+
+    return { width: 0, height: 0 };
+  }, [overlayData]);
 
   const Info = useMemo(() => {
     if (!currentMarker) {
@@ -144,11 +158,68 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
 
   const overlay = useMemo(() => {
     if (overlayData) {
-      return <GroundOverlay bounds={overlayData.bbox} url={overlayData.data} />;
+      const bounds = overlayData.bbox;
+
+      return (
+        <GroundOverlay
+          bounds={bounds}
+          url={overlayData.data}
+          onClick={(e) => {
+            const lat = e.latLng!.lat();
+            const lng = e.latLng!.lng();
+            const img = document.createElement("img");
+
+            img.src = overlayData.data;
+            img.onload = () => {
+              const canvas = canvasRef.current!;
+              const { width, height } = img;
+
+              canvas.width = width;
+              canvas.height = height;
+
+              const ctx = canvas.getContext("2d")!;
+
+              ctx.clearRect(0, 0, width, height);
+
+              ctx.drawImage(img, 0, 0);
+              const x = Math.floor(((lng - bounds.west) / (bounds.east - bounds.west)) * canvas.width);
+              const y = Math.floor(((bounds.north - lat) / (bounds.north - bounds.south)) * canvas.height);
+
+              const pixel = ctx.getImageData(x, y, 1, 1).data;
+              const [r, g, b, a] = pixel;
+
+              console.log(`点击位置经纬度：${lat}, ${lng}`);
+              console.log(`像素值：R=${r}, G=${g}, B=${b}, A=${a}`);
+
+              if (r != 0 || g != 0 || b != 0 || a != 0) {
+                // 计算原始值（反向映射）
+                const minValue = overlayData.min; // 来自 jsonData
+                const maxValue = overlayData.max; // 来自 jsonData
+                const t = r / 255;
+                const originalValue = maxValue - t * (maxValue - minValue);
+
+                if (!overlayWindow) {
+                  overlayWindow = new google.maps.InfoWindow({
+                    // content: originalValue.toFixed(2),
+                    ariaLabel: "Uluru",
+                  });
+                }
+
+                overlayWindow.setPosition({ lat, lng });
+                overlayWindow.setContent(originalValue.toFixed(2));
+                overlayWindow.open({
+                  map,
+                });
+                // console.log(`估算原始值（火点强度）：${originalValue.toFixed(2)}`);
+              }
+            };
+          }}
+        />
+      );
     }
 
     return null;
-  }, [overlayData]);
+  }, [overlayData, map]);
 
   const polyline = useMemo(() => {
     if (!route) {
@@ -280,6 +351,12 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
         </GoogleMap>
       </LoadScript>
       {children}
+      <canvas
+        ref={canvasRef}
+        className="absolute -z-10 left-0 top-0"
+        height={canvasSize.height}
+        width={canvasSize.width}
+      />
     </MapContext.Provider>
   );
 };

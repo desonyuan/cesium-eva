@@ -2,14 +2,13 @@
 
 import { useBoolean, useRequest } from "ahooks";
 import { Button, Card, Cascader, Form, Input, Modal, Spin } from "antd";
+import { FC, PropsWithChildren, useEffect, useMemo, useState } from "react";
+
+import ChatWindow from "../ai/ChatWindow";
 
 import { Option, useOptions } from "@/src/actions/tif.hook";
 import { useMapContext } from "@/src/context/map.ctx";
 import { API } from "@/src/utils/http";
-
-import {} from "cesium";
-import { FC, PropsWithChildren, useEffect, useMemo, useState } from "react";
-
 import { useUser } from "@/src/hooks/useUser";
 import { useEscape } from "@/src/actions/closure.hook";
 
@@ -23,6 +22,8 @@ export type OverlayData = {
   };
   width: number;
   height: number;
+  max: number;
+  min: number;
 };
 
 interface IProps {}
@@ -35,6 +36,7 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
   const { user } = useUser();
   const [isModalOpen, setIsModalOpen] = useBoolean();
   const { createEscape, loading: loadingEscape } = useEscape();
+  const [chatVisible, setChatVisible] = useBoolean();
   const [form] = Form.useForm();
 
   const { run: loadTif, loading: loadingTif } = useRequest(
@@ -94,56 +96,62 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
   }, [options]);
 
   return (
-    <div className="absolute top-28 left-2">
-      <Card
-        classNames={{ body: "gap-5" }}
-        extra={loadingTif && <Spin />}
-        style={{ width: 300 }}
-        title="Fire spread forecast"
-        variant="borderless"
-      >
-        <div className="flex flex-col gap-y-5">
-          <Cascader
-            className="w-full!"
-            loadData={loadData}
-            loading={firstLoading || loading}
-            options={list}
-            placeholder="Please select"
-            value={values}
-            onChange={onChange}
-          />
-          {user && user.role === "ADMIN" && (
-            <>
-              <Button type={closureMode ? "primary" : "default"} onClick={() => setClosureMode.toggle()}>
-                {closureMode ? "Done" : "Set closure"}
-              </Button>
-            </>
-          )}
-          <Button type="primary" onClick={setIsModalOpen.setTrue}>
-            Planning the path
-          </Button>
-        </div>
-      </Card>
-      <Modal
-        closable={{ "aria-label": "Custom Close Button" }}
-        okButtonProps={{
-          loading: loadingEscape,
-        }}
-        open={isModalOpen}
-        title="Please enter your latitude and longitude"
-        onCancel={setIsModalOpen.setFalse}
-        onOk={handleClosure}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item required label="Latitude" name="latitude" rules={[{ required: true }]}>
-            <Input required placeholder="Latitude" />
-          </Form.Item>
-          <Form.Item required label="Longitude" name="longitude" rules={[{ required: true }]}>
-            <Input required placeholder="Longitude" />
-          </Form.Item>
-        </Form>
+    <>
+      <div className="absolute top-28 left-2">
+        <Card
+          classNames={{ body: "gap-5" }}
+          extra={loadingTif && <Spin />}
+          style={{ width: 300 }}
+          title="Fire spread forecast"
+          variant="borderless"
+        >
+          <div className="flex flex-col gap-y-5">
+            <Cascader
+              className="w-full!"
+              loadData={loadData}
+              loading={firstLoading || loading}
+              options={list}
+              placeholder="Please select"
+              value={values}
+              onChange={onChange}
+            />
+            {user && user.role === "ADMIN" && (
+              <>
+                <Button type={closureMode ? "primary" : "default"} onClick={() => setClosureMode.toggle()}>
+                  {closureMode ? "Done" : "Set closure"}
+                </Button>
+              </>
+            )}
+            <Button onClick={setChatVisible.setTrue}>Ai Chat</Button>
+            <Button type="primary" onClick={setIsModalOpen.setTrue}>
+              Planning the path
+            </Button>
+          </div>
+        </Card>
+        <Modal
+          closable={{ "aria-label": "Custom Close Button" }}
+          okButtonProps={{
+            loading: loadingEscape,
+          }}
+          open={isModalOpen}
+          title="Please enter your latitude and longitude"
+          onCancel={setIsModalOpen.setFalse}
+          onOk={handleClosure}
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item required label="Latitude" name="latitude" rules={[{ required: true }]}>
+              <Input required placeholder="Latitude" />
+            </Form.Item>
+            <Form.Item required label="Longitude" name="longitude" rules={[{ required: true }]}>
+              <Input required placeholder="Longitude" />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </div>
+      <Modal footer={null} open={chatVisible} title="Ai Chat" onCancel={setChatVisible.setFalse}>
+        <ChatWindow />
       </Modal>
-    </div>
+    </>
   );
 };
 
