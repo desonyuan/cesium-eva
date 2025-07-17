@@ -86,7 +86,7 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
   useMemo(() => {
     if (currentMarker) {
       setValues([]);
-      getOptions(`${currentMarker.raw.name}/`);
+      getOptions(`${currentMarker.raw.name}/`, true);
     }
   }, [currentMarker]);
 

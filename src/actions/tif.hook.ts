@@ -11,9 +11,9 @@ export interface Option {
 
 export const useOptions = () => {
   const { data, run, loading, mutate, runAsync } = useRequest(
-    (url = "") => {
+    (url = "", isFirstLevel = false) => {
       return API.get<Option[]>("/crawl/option", {
-        data: { target: url },
+        data: { target: url, isFirstLevel },
       });
     },
     {

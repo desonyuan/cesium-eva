@@ -7,6 +7,10 @@ import { PYRECAST_BASE_URL } from "@/src/constant";
 export const GET = async (req: NextRequest) => {
   const query = new URL(req.nextUrl);
   const targetUrl = query.searchParams.get("target") || "";
+  const isFirstLevel = query.searchParams.get("isFirstLevel") === "true";
+
+  console.log(isFirstLevel, "1111111111111111");
+
   const url = PYRECAST_BASE_URL + targetUrl;
 
   const res = await axios.get(url);
@@ -16,8 +20,6 @@ export const GET = async (req: NextRequest) => {
     .map((_, el) => $(el).attr("href"))
     .get()
     .filter((href) => href && href !== "../");
-
-  const isLevel1 = targetUrl.split("/").length === 2;
 
   const result = links
     .map((link) => {
@@ -53,8 +55,8 @@ export const GET = async (req: NextRequest) => {
         }
 
         return {
-          value: isLevel1 ? `${link}elmfire/landfire/` : link,
-          label,
+          value: isFirstLevel ? `${link}elmfire/landfire/` : link,
+          label: isFirstLevel ? `Forecast start time-${link.slice(0, -1)}` : label,
           isLeaf: false,
         };
       } else {
