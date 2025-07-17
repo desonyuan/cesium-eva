@@ -1,4 +1,5 @@
 import { useRequest } from "ahooks";
+
 import { API } from "../utils/http";
 
 export interface Option {
@@ -9,13 +10,16 @@ export interface Option {
 }
 
 export const useOptions = () => {
+  const { data, run, loading, mutate, runAsync } = useRequest(
+    (url = "") => {
+      return API.get<Option[]>("/crawl/option", {
+        data: { target: url },
+      });
+    },
+    {
+      manual: true,
+    },
+  );
 
-  const { data, run, loading, mutate,runAsync } = useRequest((url = '') => {
-    return API.get<Option[]>('/crawl/option', {
-      data: { target: url }
-    });
-  }, {
-    manual: true,
-  });
-  return { options: data || [], loading, getOptions: run, mutate,runAsync };
+  return { options: data || [], loading, getOptions: run, mutate, runAsync };
 };

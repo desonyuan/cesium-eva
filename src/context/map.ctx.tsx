@@ -30,6 +30,7 @@ type MapData = {
   setClosureMode: Actions;
   route: IRoutePath | null;
   setRoute: (route: IRoutePath | null) => void;
+  setTifUrl: (url: string | null) => void;
 };
 const containerStyle = {
   width: "100%",
@@ -39,11 +40,27 @@ const containerStyle = {
 const MapContext = createContext<MapData | null>(null);
 
 let overlayWindow: google.maps.InfoWindow;
+let markerWindow: google.maps.InfoWindow;
+
+const excludedKeys = ["xlo", "xhi", "ylo", "yhi", "irwinid", "htb"];
+
+const getUnit = (tifUrl: string) => {
+  if (tifUrl.indexOf("flame-length") > -1) {
+    return "ft";
+  } else if (tifUrl.indexOf("hours-since-burned") > -1) {
+    return "hours";
+  } else if (tifUrl.indexOf("spread-rate") > -1) {
+    return "ft/min";
+  } else {
+    return "s";
+  }
+};
 
 export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const [center, setCenter] = useState({ lat: 47.6062, lng: -122.3321 }); // 美国西雅图坐标
   const { markers } = useMapMarkers();
   const [currentMarker, setCurrentMarker] = useState<FirePoint | null>(null);
+  const [tifUrl, setTifUrl] = useState<string | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [isLoaded, setLoaded] = useBoolean();
   const [overlayData, setOverlayData] = useState<OverlayData | null>(null);
@@ -52,7 +69,6 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentClosure, setCurrentClosure] = useState<IRoadClosure | null>(null);
   const [route, setRoute] = useState<IRoutePath | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stretchPx, setStretchPx] = useState<number | undefined>();
 
   const onLoad = useCallback((map: google.maps.Map) => {
     // This is just an example of getting and using the map instance!!! don't just blindly copy!
@@ -78,10 +94,15 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     const { raw, lng, lat } = currentMarker!;
-    const data = Object.entries(raw).map(([key, value]) => ({
-      key,
-      value,
-    }));
+    const data = Object.entries(raw)
+      .map(([key, value]) => {
+        if (excludedKeys.includes(key)) {
+          return null;
+        }
+
+        return { key, value };
+      })
+      .filter(Boolean);
 
     return (
       <InfoWindow
@@ -199,14 +220,12 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
                 const originalValue = maxValue - t * (maxValue - minValue);
 
                 if (!overlayWindow) {
-                  overlayWindow = new google.maps.InfoWindow({
-                    // content: originalValue.toFixed(2),
-                    ariaLabel: "Uluru",
-                  });
+                  overlayWindow = new google.maps.InfoWindow();
                 }
+                const unit = getUnit(tifUrl!);
 
                 overlayWindow.setPosition({ lat, lng });
-                overlayWindow.setContent(originalValue.toFixed(2));
+                overlayWindow.setContent(`${originalValue.toFixed(2)} ${unit}`);
                 overlayWindow.open({
                   map,
                 });
@@ -219,7 +238,7 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     return null;
-  }, [overlayData, map]);
+  }, [overlayData, map, tifUrl]);
 
   const polyline = useMemo(() => {
     if (!route) {
@@ -288,6 +307,7 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <MapContext.Provider
       value={{
+        setTifUrl,
         loaded: isLoaded,
         setCenter,
         currentMarker,

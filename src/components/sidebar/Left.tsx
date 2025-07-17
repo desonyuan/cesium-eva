@@ -32,7 +32,7 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
   const { loading, runAsync: loadOption } = useOptions();
   const [values, setValues] = useState<(string | number | null)[]>([]);
   const [list, setList] = useState<Option[]>([]);
-  const { currentMarker, setOverlayData, setClosureMode, closureMode, setRoute } = useMapContext();
+  const { currentMarker, setOverlayData, setClosureMode, closureMode, setRoute, setTifUrl } = useMapContext();
   const { user } = useUser();
   const [isModalOpen, setIsModalOpen] = useBoolean();
   const { createEscape, loading: loadingEscape } = useEscape();
@@ -68,6 +68,7 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
     setValues(vals);
     const tifUrl = `${currentMarker?.raw!.name}/${vals.join("")}`;
 
+    setTifUrl(tifUrl);
     setOverlayData(null);
     //加载tif文件
     loadTif(tifUrl, currentMarker!.lat, currentMarker!.lng);
