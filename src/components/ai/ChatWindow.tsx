@@ -1,8 +1,9 @@
 "use client";
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useCallback } from "react";
 import { Input, List, Avatar, Button } from "antd";
 import { useChat } from "@ai-sdk/react";
 import { OpenAIOutlined, UserOutlined } from "@ant-design/icons";
+import { UIMessage } from "ai";
 
 const { TextArea } = Input;
 
@@ -38,6 +39,74 @@ const ChatWindow: React.FC = () => {
     }
   };
 
+  const renderItem = useCallback((msg: UIMessage) => {
+    const isMe = msg.role === "user";
+
+    const parts = msg.parts;
+
+    return (
+      <List.Item key={msg.id}>
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            // alignItems: "start",
+            justifyContent: isMe ? "end !important" : "start !important",
+            flexDirection: isMe ? "row-reverse" : "row",
+            columnGap: 10,
+          }}
+        >
+          <div>
+            {isMe ? (
+              <Avatar icon={<UserOutlined />} style={{ backgroundColor: "#87d068" }} />
+            ) : (
+              <Avatar icon={<OpenAIOutlined />} />
+            )}
+          </div>
+          <div className="pt-1">
+            {isMe ? (
+              <div>{msg.content}</div>
+            ) : (
+              parts.map((part, idx) => {
+                switch (part.type) {
+                  case "text":
+                    return <div key={idx}>{msg.content}</div>;
+                  case "tool-invocation":
+                    switch (part.toolInvocation.state) {
+                      case "call":
+                        return (
+                          <div
+                            key={part.toolInvocation.toolCallId}
+                            className="px-2 py-1 text-white rounded-lg"
+                            style={{
+                              display: "flex",
+                              backgroundColor: "rgba(0, 0, 0, 0.3)",
+                              width: "100%",
+                              justifyContent: isMe ? "end !important" : "start !important",
+                              flexDirection: isMe ? "row-reverse" : "row",
+                              columnGap: 10,
+                            }}
+                          >
+                            <div>工具调用：{part.toolInvocation.toolName}</div>
+                            <span>正在调用...</span>
+                          </div>
+                        );
+                      case "result":
+                        return <div key={idx}>{part.toolInvocation.result}</div>;
+                      default:
+                        break;
+                    }
+                  default:
+                    return null;
+                }
+              })
+            )}
+          </div>
+        </div>
+      </List.Item>
+    );
+  }, []);
+
   return (
     <>
       <div
@@ -50,37 +119,7 @@ const ChatWindow: React.FC = () => {
           background: "#fafafa",
         }}
       >
-        <List
-          dataSource={messages}
-          renderItem={(msg) => {
-            console.log(msg, "1111111111");
-            const isMe = msg.role === "user";
-
-            return (
-              <List.Item>
-                <div
-                  style={{
-                    display: "flex",
-                    width: "100%",
-                    // alignItems: "start",
-                    justifyContent: isMe ? "end !important" : "start !important",
-                    flexDirection: isMe ? "row-reverse" : "row",
-                    columnGap: 10,
-                  }}
-                >
-                  <div>
-                    {isMe ? (
-                      <Avatar icon={<UserOutlined />} style={{ backgroundColor: "#87d068" }} />
-                    ) : (
-                      <Avatar icon={<OpenAIOutlined />} />
-                    )}
-                  </div>
-                  <div className="pt-1">{msg.content}</div>
-                </div>
-              </List.Item>
-            );
-          }}
-        />
+        <List dataSource={messages} renderItem={renderItem} />
         <div ref={messagesEndRef} />
       </div>
 

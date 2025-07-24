@@ -6,6 +6,7 @@ import { Button, Popconfirm, Table } from "antd";
 import { useBoolean } from "ahooks";
 import { Actions } from "ahooks/lib/useBoolean";
 import dayjs from "dayjs";
+import { createRoot } from "react-dom/client";
 
 import { FirePoint, IRoadClosure, useClosureMarkers, useMapMarkers, useReportMarkers } from "../actions/maker.hook";
 import { OverlayData } from "../components/sidebar/Left";
@@ -58,7 +59,7 @@ const getUnit = (tifUrl: string) => {
 export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const [center, setCenter] = useState({ lat: 47.6062, lng: -122.3321 }); // 美国西雅图坐标
   const { markers } = useMapMarkers();
-  const { reportMarkers } = useReportMarkers();
+  const { reportMarkers, delReport } = useReportMarkers();
   const [currentMarker, setCurrentMarker] = useState<FirePoint | null>(null);
   const [tifUrl, setTifUrl] = useState<string | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -69,8 +70,6 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentClosure, setCurrentClosure] = useState<IRoadClosure | null>(null);
   const [route, setRoute] = useState<IRoutePath | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  console.log(reportMarkers, "reportMarkersreportMarkers");
 
   const onLoad = useCallback((map: google.maps.Map) => {
     // This is just an example of getting and using the map instance!!! don't just blindly copy!
@@ -212,9 +211,6 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
               const pixel = ctx.getImageData(x, y, 1, 1).data;
               const [r, g, b, a] = pixel;
 
-              console.log(`点击位置经纬度：${lat}, ${lng}`);
-              console.log(`像素值：R=${r}, G=${g}, B=${b}, A=${a}`);
-
               if (r != 0 || g != 0 || b != 0 || a != 0) {
                 // 计算原始值（反向映射）
                 const minValue = overlayData.min; // 来自 jsonData
@@ -295,7 +291,7 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [route, map]);
 
-  // fit到Marker
+  // fit到Marker;
   useEffect(() => {
     if (markers.length > 0 && map) {
       const bounds = new google.maps.LatLngBounds();
@@ -333,7 +329,6 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
               // 设定封路
               createClosure(e.latLng!.toJSON());
             }
-
             setCurrentMarker(null);
           }}
           onLoad={onLoad}
@@ -359,6 +354,36 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
                   key={index}
                   icon={{ url: "/fire.png", scaledSize: new window.google.maps.Size(32, 32) }}
                   position={{ lat: m.lat, lng: m.lng }}
+                  onClick={(e) => {
+                    const container = document.createElement("div");
+
+                    // 使用 React 18 的 root API
+                    const root = createRoot(container);
+
+                    root.render(
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          delReport(m.id).then(() => {
+                            // 处理删除成功后的逻辑
+                            info.close();
+                          });
+                        }}
+                      >
+                        删除
+                      </Button>,
+                    );
+
+                    var info = new google.maps.InfoWindow({
+                      pixelOffset: new window.google.maps.Size(0, -30),
+                      position: { lat: m.lat, lng: m.lng },
+                      content: container,
+                    });
+
+                    // new window.google.maps.Size(0, -30)
+                    // 将 MyComponent 转换成 HTML 字符串
+                    info.open(map);
+                  }}
                 />
               );
             })}

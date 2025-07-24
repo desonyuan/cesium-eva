@@ -26,8 +26,30 @@ export const POST = async (req: NextRequest) => {
 export const GET = async () => {
   const data = await $db.reportWildfire.findMany();
 
+  console.log(data, "2222222222222");
+
   return NextResponse.json({
     data,
     statusCode: 200,
+  });
+};
+
+export const DELETE = async (req: NextRequest) => {
+  const { id } = await req.json();
+
+  if (id) {
+    await $db.reportWildfire.delete({
+      where: {
+        id: Number(id),
+      },
+    });
+
+    return NextResponse.json({
+      statusCode: 200,
+    });
+  }
+
+  return NextResponse.json({
+    statusCode: 400,
   });
 };

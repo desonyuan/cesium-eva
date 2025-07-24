@@ -2,6 +2,8 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { createDifyProvider } from "dify-ai-provider";
 
+import { getFireInfo } from "@/src/tool/dify";
+
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -28,6 +30,7 @@ export async function POST(request: Request) {
     // system: "You are a friendly assistant!",
     messages,
     maxSteps: 5,
+    tools: { getFireInfo },
   });
 
   return result.toDataStreamResponse();
