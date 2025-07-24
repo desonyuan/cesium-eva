@@ -38,6 +38,13 @@ export const useMapMarkers = () => {
 
   return { markers: data || [] };
 };
+export const useReportMarkers = () => {
+  const { data } = useRequest(() => {
+    return API.get<FirePoint[]>("/report");
+  });
+
+  return { reportMarkers: data || [] };
+};
 
 export const useClosureMarkers = () => {
   const {

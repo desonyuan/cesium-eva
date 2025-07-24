@@ -14,16 +14,27 @@ datasource db {
 }
 
 model User {
-  id          Int           @id @default(autoincrement())
-  username    String        @unique
-  password    String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  role        String
-  RoadClosure RoadClosure[]
+  id             Int              @id @default(autoincrement())
+  username       String           @unique
+  password       String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  role           String
+  RoadClosure    RoadClosure[]
+  ReportWildfire ReportWildfire[]
 }
 
 model RoadClosure {
+  id        Int      @id @default(autoincrement())
+  lat       Float
+  lng       Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id])
+  userId    Int
+}
+
+model ReportWildfire {
   id        Int      @id @default(autoincrement())
   lat       Float
   lng       Float

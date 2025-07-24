@@ -7,7 +7,7 @@ import { useBoolean } from "ahooks";
 import { Actions } from "ahooks/lib/useBoolean";
 import dayjs from "dayjs";
 
-import { FirePoint, IRoadClosure, useClosureMarkers, useMapMarkers } from "../actions/maker.hook";
+import { FirePoint, IRoadClosure, useClosureMarkers, useMapMarkers, useReportMarkers } from "../actions/maker.hook";
 import { OverlayData } from "../components/sidebar/Left";
 type Point = { lat: number; lng: number };
 
@@ -40,7 +40,6 @@ const containerStyle = {
 const MapContext = createContext<MapData | null>(null);
 
 let overlayWindow: google.maps.InfoWindow;
-let markerWindow: google.maps.InfoWindow;
 
 const excludedKeys = ["xlo", "xhi", "ylo", "yhi", "irwinid", "htb"];
 
@@ -59,6 +58,7 @@ const getUnit = (tifUrl: string) => {
 export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const [center, setCenter] = useState({ lat: 47.6062, lng: -122.3321 }); // 美国西雅图坐标
   const { markers } = useMapMarkers();
+  const { reportMarkers } = useReportMarkers();
   const [currentMarker, setCurrentMarker] = useState<FirePoint | null>(null);
   const [tifUrl, setTifUrl] = useState<string | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -70,11 +70,14 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const [route, setRoute] = useState<IRoutePath | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  console.log(reportMarkers, "reportMarkersreportMarkers");
+
   const onLoad = useCallback((map: google.maps.Map) => {
     // This is just an example of getting and using the map instance!!! don't just blindly copy!
     // const bounds = new window.google.maps.LatLngBounds(center);
     // map.fitBounds(bounds);
     setMap(map);
+    map.data.loadGeoJson("/res/CalFire_Perimeters_(NIFC_FIRIS)_Public_View_-.geojson");
     setLoaded.setTrue();
   }, []);
 
@@ -349,7 +352,16 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
                 />
               );
             })}
-
+          {isLoaded &&
+            reportMarkers.map((m, index) => {
+              return (
+                <Marker
+                  key={index}
+                  icon={{ url: "/fire.png", scaledSize: new window.google.maps.Size(32, 32) }}
+                  position={{ lat: m.lat, lng: m.lng }}
+                />
+              );
+            })}
           {isLoaded &&
             closureData.map((m, index) => {
               return (

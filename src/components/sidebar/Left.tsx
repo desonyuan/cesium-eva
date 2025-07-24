@@ -6,11 +6,13 @@ import { FC, PropsWithChildren, useEffect, useMemo, useState } from "react";
 
 import ChatWindow from "../ai/ChatWindow";
 
+import ReportWildfre from "./module/ReportWildfre";
+
+import { useEscape } from "@/src/actions/closure.hook";
 import { Option, useOptions } from "@/src/actions/tif.hook";
 import { useMapContext } from "@/src/context/map.ctx";
-import { API } from "@/src/utils/http";
 import { useUser } from "@/src/hooks/useUser";
-import { useEscape } from "@/src/actions/closure.hook";
+import { API } from "@/src/utils/http";
 
 export type OverlayData = {
   data: string;
@@ -121,6 +123,7 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
                 <Button type={closureMode ? "primary" : "default"} onClick={() => setClosureMode.toggle()}>
                   {closureMode ? "Done" : "Set closure"}
                 </Button>
+                <ReportWildfre />
               </>
             )}
             <Button onClick={setChatVisible.setTrue}>Ai Chat</Button>
@@ -140,11 +143,11 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
           onOk={handleClosure}
         >
           <Form form={form} layout="vertical">
-            <Form.Item required label="Latitude" name="latitude" rules={[{ required: true }]}>
-              <Input required placeholder="Latitude" />
-            </Form.Item>
             <Form.Item required label="Longitude" name="longitude" rules={[{ required: true }]}>
               <Input required placeholder="Longitude" />
+            </Form.Item>
+            <Form.Item required label="Latitude" name="latitude" rules={[{ required: true }]}>
+              <Input required placeholder="Latitude" />
             </Form.Item>
           </Form>
         </Modal>
