@@ -9,13 +9,16 @@ export interface Option {
 }
 
 export const useOptions = () => {
+  const { data, run, loading, mutate, runAsync } = useRequest(
+    (url = "", isFirstLevel = false) => {
+      return API.get<Option[]>("/crawl/option", {
+        data: { target: url, isFirstLevel },
+      });
+    },
+    {
+      manual: true,
+    },
+  );
 
-  const { data, run, loading, mutate,runAsync } = useRequest((url = '') => {
-    return API.get<Option[]>('/crawl/option', {
-      data: { target: url }
-    });
-  }, {
-    manual: true,
-  });
-  return { options: data || [], loading, getOptions: run, mutate,runAsync };
+  return { options: data || [], loading, getOptions: run, mutate, runAsync };
 };

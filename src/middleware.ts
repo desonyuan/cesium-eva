@@ -65,9 +65,9 @@ function redirectToLogin(request: NextRequest) {
   return NextResponse.redirect(loginUrl);
 }
 
-// 5. Configure scope to match all requests
+// 5. 配置作用范围 匹配所有请求
 export const config = {
-  // matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'], // Match all pages, exclude static resources
+  // matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'], // 匹配所有页面，排除静态资源
   matcher: ["/((?!api|_next/static|_next/image|.*\\.png$|.*\\.jpg$|.*\\.mp4$|.*\\.jpeg$|.*\\.ico$).*)"],
 };
 

@@ -7,12 +7,15 @@ import { Option, useOptions } from "@/src/actions/tif.hook";
 import { useMapContext } from "@/src/context/map.ctx";
 import { API } from "@/src/utils/http";
 
-import {} from "cesium";
 import { FC, PropsWithChildren, useEffect, useMemo, useState } from "react";
 
 import { useUser } from "@/src/hooks/useUser";
 import { useEscape } from "@/src/actions/closure.hook";
 import ShelterManager from "@/src/components/ShelterManager";
+
+import ChatWindow from "../ai/ChatWindow";
+
+import ReportWildfre from "./module/ReportWildfre";
 
 export type OverlayData = {
   data: string;
@@ -24,6 +27,9 @@ export type OverlayData = {
   };
   width: number;
   height: number;
+
+  max: number;
+  min: number;
 };
 
 interface IProps {}
@@ -32,6 +38,7 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
   const { loading, runAsync: loadOption } = useOptions();
   const [values, setValues] = useState<(string | number | null)[]>([]);
   const [list, setList] = useState<Option[]>([]);
+
   const {
     currentMarker,
     setOverlayData,
@@ -40,12 +47,16 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
     route,
     setRoute,
     showShelters,
-    setShowShelters
+    setShowShelters,
+    setTifUrl,
   } = useMapContext();
   const { user } = useUser();
-  const [isModalOpen, setIsModalOpen] = useBoolean();
   const [showShelterManager, setShowShelterManager] = useBoolean();
+
+  const [isModalOpen, setIsModalOpen] = useBoolean();
   const { createEscape, loading: loadingEscape } = useEscape();
+  const [chatVisible, setChatVisible] = useBoolean();
+
   const [form] = Form.useForm();
 
   const { run: loadTif, loading: loadingTif } = useRequest(
@@ -77,6 +88,7 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
     setValues(vals);
     const tifUrl = `${currentMarker?.raw!.name}/${vals.join("")}`;
 
+    setTifUrl(tifUrl);
     setOverlayData(null);
     //加载tif文件
     loadTif(tifUrl, currentMarker!.lat, currentMarker!.lng);
@@ -95,13 +107,14 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
       setRoute(res);
     }, 100);
 
+    setRoute(res);
     setIsModalOpen.setFalse();
   };
 
   useMemo(() => {
     if (currentMarker) {
       setValues([]);
-      getOptions(`${currentMarker.raw.name}/`);
+      getOptions(`${currentMarker.raw.name}/`, true);
     }
   }, [currentMarker]);
 
@@ -116,10 +129,7 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
       {showShelterManager ? (
         <div className="fixed inset-0 bg-white z-50 overflow-auto">
           <ShelterManager />
-          <Button
-            className="fixed top-4 right-4 z-60"
-            onClick={() => setShowShelterManager.setFalse()}
-          >
+          <Button className="fixed top-4 right-4 z-60" onClick={() => setShowShelterManager.setFalse()}>
             Close
           </Button>
         </div>
@@ -131,78 +141,76 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
           title="Fire spread forecast"
           variant="borderless"
         >
-        <div className="flex flex-col gap-y-5">
-          <Cascader
-            className="w-full!"
-            loadData={loadData}
-            loading={firstLoading || loading}
-            options={list}
-            placeholder="Please select"
-            value={values}
-            onChange={onChange}
-          />
-          {user && user.role === "ADMIN" && (
-            <>
-              <Button type={closureMode ? "primary" : "default"} onClick={() => setClosureMode.toggle()}>
-                {closureMode ? "Done" : "Set closure"}
-              </Button>
-              <Button
-                type={showShelterManager ? "primary" : "default"}
-                onClick={() => setShowShelterManager.toggle()}
-              >
-                {showShelterManager ? "Close Shelter Manager" : "Manage Shelters"}
-              </Button>
-            </>
-          )}
-          <div className="flex flex-col gap-2">
-            <Button
-              type={showShelters ? "primary" : "default"}
-              onClick={() => setShowShelters(!showShelters)}
-            >
-              {showShelters ? "Hide shelters" : "Show shelters"}
-            </Button>
-            {showShelters && (
-              <Button type="default" onClick={() => setShowShelters(false)}>
-                Clear shelters
-              </Button>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button type="primary" onClick={setIsModalOpen.setTrue}>
-              Planning the path
-            </Button>
-            {route && (
+          <div className="flex flex-col gap-y-5">
+            <Cascader
+              className="w-full!"
+              loadData={loadData}
+              loading={firstLoading || loading}
+              options={list}
+              placeholder="Please select"
+              value={values}
+              onChange={onChange}
+            />
+            {user && user.role === "ADMIN" && (
               <>
-                <div className="text-sm text-gray-600">
-                  Route: {route.n_points} points, {route.cost_s}s
-                </div>
-                <Button type="default" onClick={() => setRoute(null)}>
-                  Clear route
+                <Button type={closureMode ? "primary" : "default"} onClick={() => setClosureMode.toggle()}>
+                  {closureMode ? "Done" : "Set closure"}
+                </Button>
+                <Button
+                  type={showShelterManager ? "primary" : "default"}
+                  onClick={() => setShowShelterManager.toggle()}
+                >
+                  {showShelterManager ? "Close Shelter Manager" : "Manage Shelters"}
                 </Button>
               </>
             )}
+            <Button onClick={setChatVisible.setTrue}>Ai Chat</Button>
+            <div className="flex flex-col gap-2">
+              <Button type={showShelters ? "primary" : "default"} onClick={() => setShowShelters(!showShelters)}>
+                {showShelters ? "Hide shelters" : "Show shelters"}
+              </Button>
+              {showShelters && (
+                <Button type="default" onClick={() => setShowShelters(false)}>
+                  Clear shelters
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button type="primary" onClick={setIsModalOpen.setTrue}>
+                Planning the path
+              </Button>
+              {route && (
+                <>
+                  <div className="text-sm text-gray-600">
+                    Route: {route.n_points} points, {route.cost_s}s
+                  </div>
+                  <Button type="default" onClick={() => setRoute(null)}>
+                    Clear route
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-        <Modal
-          closable={true}
-          okButtonProps={{
-            loading: loadingEscape,
-          }}
-          open={isModalOpen}
-          title="Please enter your latitude and longitude"
-          onCancel={setIsModalOpen.setFalse}
-          onOk={handleClosure}
-        >
-          <Form form={form} layout="vertical">
-            <Form.Item required label="Latitude" name="latitude" rules={[{ required: true }]}>
-              <Input required placeholder="Latitude" />
-            </Form.Item>
-            <Form.Item required label="Longitude" name="longitude" rules={[{ required: true }]}>
-              <Input required placeholder="Longitude" />
-            </Form.Item>
-          </Form>
-        </Modal>
-      </Card>
+          <Modal
+            closable={true}
+            okButtonProps={{
+              loading: loadingEscape,
+            }}
+            open={isModalOpen}
+            title="Please enter your latitude and longitude"
+            onCancel={setIsModalOpen.setFalse}
+            onOk={handleClosure}
+          >
+            <Form form={form} layout="vertical">
+              <Form.Item required label="Latitude" name="latitude" rules={[{ required: true }]}>
+                <Input required placeholder="Latitude" />
+              </Form.Item>
+              <Form.Item required label="Longitude" name="longitude" rules={[{ required: true }]}>
+                <Input required placeholder="Longitude" />
+              </Form.Item>
+            </Form>
+          </Modal>
+        </Card>
       )}
     </div>
   );

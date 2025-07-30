@@ -1,5 +1,6 @@
 import { useRequest } from "ahooks";
-import { RoadClosure, User } from "@prisma/client";
+
+import { ReportWildfire, RoadClosure, User } from "@prisma/client";
 
 import { API } from "../utils/http";
 
@@ -37,6 +38,21 @@ export const useMapMarkers = () => {
   });
 
   return { markers: data || [] };
+};
+
+export const useReportMarkers = () => {
+  const { data, run: refresh } = useRequest(() => {
+    return API.get<ReportWildfire[]>("/report");
+  });
+
+  const { runAsync: delReport } = useRequest(
+    (id: number) => {
+      return API.delete<ReportWildfire>("/report", { data: { id } });
+    },
+    { manual: true, onSuccess: refresh },
+  );
+
+  return { reportMarkers: data || [], delReport };
 };
 
 export const useClosureMarkers = () => {

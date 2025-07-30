@@ -32,7 +32,7 @@ const prefix = "api";
 //   }
 // };
 
-// Create instance
+// 创建实例，
 const ApiInstance = new ModernFetch({
   baseUrl: BaseUrl,
   // prefix,
@@ -47,13 +47,13 @@ ApiInstance.addReqIntcp(async (config) => {
 
   return config;
 });
-// Response interceptor
+// 响应拦截器
 ApiInstance.addResIntcp(async (response, responseTyepe, retry) => {
   if (response.ok) {
     const status = response.status;
 
-    // Request successful - support 200 and 201 status codes
-    if (status === 200 || status === 201) {
+    // 请求成功
+    if (status === 200) {
       const _token = response.headers.get("authorization");
 
       if (_token) {
@@ -69,21 +69,20 @@ ApiInstance.addResIntcp(async (response, responseTyepe, retry) => {
 
       switch (statusCode) {
         case 200:
-        case 201: // Add support for 201 status code
           return json.data;
         case 401:
           message.error("Unauthorized access");
 
-          // Logout current account
+          //退出当前登录的账号
           // await Logout();
           return Promise.reject();
-        // case 406: // refresh token expired, request new one
+        // case 406: //refresh token 过期重新申请
         //   await RefreshToken();
         //   return await retry();
         case 422:
         // Message.show({
         //   type: 'warning',
-        //   title: 'Parameter validation error',
+        //   title: '参数验证出错',
         //   content: json.message,
         // });
         // return Promise.reject(json.message);

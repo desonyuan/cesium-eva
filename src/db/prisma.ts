@@ -1,12 +1,10 @@
-import { PrismaClient,PrismaPromise } from "@prisma/client";
-
-
+import { PrismaClient, PrismaPromise } from "@prisma/client";
 
 export const $db = new PrismaClient({
   // datasourceUrl: DB_URL,
 });
 /**
- * Query and count results (for pagination)
+ * 查询并统计结果,(用于分页)
  * @param queryList
  * @returns
  */

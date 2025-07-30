@@ -1,5 +1,4 @@
 import "@/styles/globals.css";
-import "cesium/Build/Cesium/Widgets/widgets.css";
 import clsx from "clsx";
 import { Metadata, Viewport } from "next";
 

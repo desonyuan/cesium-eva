@@ -26,7 +26,7 @@ export const POST = async (req: Request) => {
           console.warn(`⚠️ Python脚本警告:`, stderr);
         }
 
-        console.log(`✅ Python脚本输出:`, stdout.substring(0, 200) + '...');
+        console.log(`✅ Python脚本输出:`, stdout.substring(0, 200) + "...");
         resolve(stdout);
       });
     });
@@ -40,10 +40,13 @@ export const POST = async (req: Request) => {
     });
   } catch (error) {
     console.error(`❌ API错误:`, error);
-    return NextResponse.json({
-      error: "路径规划失败",
-      details: error instanceof Error ? error.message : String(error),
-      statusCode: 500,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "路径规划失败",
+        details: error instanceof Error ? error.message : String(error),
+        statusCode: 500,
+      },
+      { status: 500 },
+    );
   }
 };
