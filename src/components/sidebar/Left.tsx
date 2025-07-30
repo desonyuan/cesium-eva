@@ -212,6 +212,9 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
           </Modal>
         </Card>
       )}
+      <Modal footer={null} open={chatVisible} title="Ai Chat" onCancel={setChatVisible.setFalse}>
+        <ChatWindow />
+      </Modal>
     </div>
   );
 };
