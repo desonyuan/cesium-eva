@@ -1,0 +1,6 @@
+@import "tailwindcss";
+@import "../src/styles/transparent-info-window.css";
+
+.gmnoprint {
+  z-index: 999 !important;
+}
