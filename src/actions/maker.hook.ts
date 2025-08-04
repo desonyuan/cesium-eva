@@ -1,4 +1,5 @@
 import { useRequest } from "ahooks";
+
 import { ReportWildfire, RoadClosure, User } from "@prisma/client";
 
 import { API } from "../utils/http";
@@ -38,6 +39,7 @@ export const useMapMarkers = () => {
 
   return { markers: data || [] };
 };
+
 export const useReportMarkers = () => {
   const { data, run: refresh } = useRequest(() => {
     return API.get<ReportWildfire[]>("/report");

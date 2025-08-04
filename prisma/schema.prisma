@@ -34,6 +34,18 @@ model RoadClosure {
   userId    Int
 }
 
+model Shelter {
+  id        Int      @id @default(autoincrement())
+  shelterId String   @unique // shelter_id from GeoJSON
+  lat       Float
+  lng       Float
+  capacity  Int
+  hexId     String // hex_id from GeoJSON
+  region    String // "la" or "squamish"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model ReportWildfire {
   id        Int      @id @default(autoincrement())
   lat       Float

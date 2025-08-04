@@ -3,17 +3,15 @@
 import { useBoolean, useRequest } from "ahooks";
 import { Button, Card, Cascader, Form, Input, Modal, Spin } from "antd";
 import { FC, PropsWithChildren, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 
 import ChatWindow from "../ai/ChatWindow";
 
-import ReportWildfre from "./module/ReportWildfre";
-
-import { useEscape } from "@/src/actions/closure.hook";
 import { Option, useOptions } from "@/src/actions/tif.hook";
 import { useMapContext } from "@/src/context/map.ctx";
-import { useUser } from "@/src/hooks/useUser";
 import { API } from "@/src/utils/http";
+import { useUser } from "@/src/hooks/useUser";
+import { useEscape } from "@/src/actions/closure.hook";
+import ShelterManager from "@/src/components/ShelterManager";
 
 export type OverlayData = {
   data: string;
@@ -25,6 +23,7 @@ export type OverlayData = {
   };
   width: number;
   height: number;
+
   max: number;
   min: number;
 };
@@ -40,15 +39,19 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
     setOverlayData,
     setClosureMode,
     closureMode,
+    route,
     setRoute,
-    setTifUrl,
     showShelters,
     setShowShelters,
+    setTifUrl,
   } = useMapContext();
   const { user } = useUser();
+  const [showShelterManager, setShowShelterManager] = useBoolean();
+
   const [isModalOpen, setIsModalOpen] = useBoolean();
   const { createEscape, loading: loadingEscape } = useEscape();
   const [chatVisible, setChatVisible] = useBoolean();
+
   const [form] = Form.useForm();
 
   const { run: loadTif, loading: loadingTif } = useRequest(
@@ -89,7 +92,15 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
   const handleClosure = async () => {
     const values = await form.validateFields();
 
+    // 先清除旧路径
+    setRoute(null);
+
     const res = await createEscape(values);
+
+    // 添加小延迟确保状态更新
+    setTimeout(() => {
+      setRoute(res);
+    }, 100);
 
     setRoute(res);
     setIsModalOpen.setFalse();
@@ -109,8 +120,15 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
   }, [options]);
 
   return (
-    <>
-      <div className="absolute top-28 left-2">
+    <div className="absolute top-28 left-2">
+      {showShelterManager ? (
+        <div className="fixed inset-0 bg-white z-50 overflow-auto">
+          <ShelterManager />
+          <Button className="fixed top-4 right-4 z-60" onClick={() => setShowShelterManager.setFalse()}>
+            Close
+          </Button>
+        </div>
+      ) : (
         <Card
           classNames={{ body: "gap-5" }}
           extra={loadingTif && <Spin />}
@@ -133,14 +151,15 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
                 <Button type={closureMode ? "primary" : "default"} onClick={() => setClosureMode.toggle()}>
                   {closureMode ? "Done" : "Set closure"}
                 </Button>
-                <Link className="block" href="/shelters">
-                  <Button className="w-full">Manage Shelters</Button>
-                </Link>
-                <ReportWildfre />
+                <Button
+                  type={showShelterManager ? "primary" : "default"}
+                  onClick={() => setShowShelterManager.toggle()}
+                >
+                  {showShelterManager ? "Close Shelter Manager" : "Manage Shelters"}
+                </Button>
               </>
             )}
             <Button onClick={setChatVisible.setTrue}>Ai Chat</Button>
-
             <div className="flex flex-col gap-2">
               <Button type={showShelters ? "primary" : "default"} onClick={() => setShowShelters(!showShelters)}>
                 {showShelters ? "Hide shelters" : "Show shelters"}
@@ -151,36 +170,47 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
                 </Button>
               )}
             </div>
-
-            <Button type="primary" onClick={setIsModalOpen.setTrue}>
-              Planning the path
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button type="primary" onClick={setIsModalOpen.setTrue}>
+                Planning the path
+              </Button>
+              {route && (
+                <>
+                  <div className="text-sm text-gray-600">
+                    Route: {route.n_points} points, {route.cost_s}s
+                  </div>
+                  <Button type="default" onClick={() => setRoute(null)}>
+                    Clear route
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
+          <Modal
+            closable={true}
+            okButtonProps={{
+              loading: loadingEscape,
+            }}
+            open={isModalOpen}
+            title="Please enter your latitude and longitude"
+            onCancel={setIsModalOpen.setFalse}
+            onOk={handleClosure}
+          >
+            <Form form={form} layout="vertical">
+              <Form.Item required label="Latitude" name="latitude" rules={[{ required: true }]}>
+                <Input required placeholder="Latitude" />
+              </Form.Item>
+              <Form.Item required label="Longitude" name="longitude" rules={[{ required: true }]}>
+                <Input required placeholder="Longitude" />
+              </Form.Item>
+            </Form>
+          </Modal>
         </Card>
-        <Modal
-          closable={{ "aria-label": "Custom Close Button" }}
-          okButtonProps={{
-            loading: loadingEscape,
-          }}
-          open={isModalOpen}
-          title="Please enter your latitude and longitude"
-          onCancel={setIsModalOpen.setFalse}
-          onOk={handleClosure}
-        >
-          <Form form={form} layout="vertical">
-            <Form.Item required label="Longitude" name="longitude" rules={[{ required: true }]}>
-              <Input required placeholder="Longitude" />
-            </Form.Item>
-            <Form.Item required label="Latitude" name="latitude" rules={[{ required: true }]}>
-              <Input required placeholder="Latitude" />
-            </Form.Item>
-          </Form>
-        </Modal>
-      </div>
+      )}
       <Modal footer={null} open={chatVisible} title="Ai Chat" onCancel={setChatVisible.setFalse}>
         <ChatWindow />
       </Modal>
-    </>
+    </div>
   );
 };
 

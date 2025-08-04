@@ -1,6 +1,4 @@
-import { PrismaClient,PrismaPromise } from "@prisma/client";
-
-
+import { PrismaClient, PrismaPromise } from "@prisma/client";
 
 export const $db = new PrismaClient({
   // datasourceUrl: DB_URL,

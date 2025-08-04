@@ -1,8 +1,7 @@
+import { PYRECAST_BASE_URL } from "@/src/constant";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import { NextRequest, NextResponse } from "next/server";
-
-import { PYRECAST_BASE_URL } from "@/src/constant";
 
 export const GET = async (req: NextRequest) => {
   const query = new URL(req.nextUrl);
