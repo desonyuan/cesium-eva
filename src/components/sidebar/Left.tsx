@@ -3,6 +3,7 @@
 import { useBoolean, useRequest } from "ahooks";
 import { Button, Card, Cascader, Form, Input, Modal, Spin } from "antd";
 import { FC, PropsWithChildren, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 import ChatWindow from "../ai/ChatWindow";
 
@@ -34,7 +35,16 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
   const { loading, runAsync: loadOption } = useOptions();
   const [values, setValues] = useState<(string | number | null)[]>([]);
   const [list, setList] = useState<Option[]>([]);
-  const { currentMarker, setOverlayData, setClosureMode, closureMode, setRoute, setTifUrl } = useMapContext();
+  const {
+    currentMarker,
+    setOverlayData,
+    setClosureMode,
+    closureMode,
+    setRoute,
+    setTifUrl,
+    showShelters,
+    setShowShelters,
+  } = useMapContext();
   const { user } = useUser();
   const [isModalOpen, setIsModalOpen] = useBoolean();
   const { createEscape, loading: loadingEscape } = useEscape();
@@ -123,10 +133,25 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
                 <Button type={closureMode ? "primary" : "default"} onClick={() => setClosureMode.toggle()}>
                   {closureMode ? "Done" : "Set closure"}
                 </Button>
+                <Link className="block" href="/shelters">
+                  <Button className="w-full">Manage Shelters</Button>
+                </Link>
                 <ReportWildfre />
               </>
             )}
             <Button onClick={setChatVisible.setTrue}>Ai Chat</Button>
+
+            <div className="flex flex-col gap-2">
+              <Button type={showShelters ? "primary" : "default"} onClick={() => setShowShelters(!showShelters)}>
+                {showShelters ? "Hide shelters" : "Show shelters"}
+              </Button>
+              {showShelters && (
+                <Button type="default" onClick={() => setShowShelters(false)}>
+                  Clear shelters
+                </Button>
+              )}
+            </div>
+
             <Button type="primary" onClick={setIsModalOpen.setTrue}>
               Planning the path
             </Button>

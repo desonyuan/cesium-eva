@@ -11,7 +11,7 @@ export const getFireInfo = tool({
     time: z.string().describe("发生火灾的时间,格式为 2025-07-10T00:00:00"),
   }),
   async execute({ locate, time }) {
-    console.log(locate, time, "参数");
+    console.log(locate, time, "参数-------");
 
     const response = await fetch(API_URL, {
       method: "POST",

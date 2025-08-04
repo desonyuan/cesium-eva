@@ -5,6 +5,8 @@ import { useChat } from "@ai-sdk/react";
 import { OpenAIOutlined, UserOutlined } from "@ant-design/icons";
 import { UIMessage } from "ai";
 
+import ConentFormat from "./ConentFormat";
+
 const { TextArea } = Input;
 
 interface Message {
@@ -70,7 +72,7 @@ const ChatWindow: React.FC = () => {
               parts.map((part, idx) => {
                 switch (part.type) {
                   case "text":
-                    return <div key={idx}>{msg.content}</div>;
+                    return <ConentFormat key={idx} content={msg.content} />;
                   case "tool-invocation":
                     switch (part.toolInvocation.state) {
                       case "call":
@@ -92,7 +94,7 @@ const ChatWindow: React.FC = () => {
                           </div>
                         );
                       case "result":
-                        return <div key={idx}>{part.toolInvocation.result}</div>;
+                        return <ConentFormat key={idx} content={part.toolInvocation.result} />;
                       default:
                         break;
                     }

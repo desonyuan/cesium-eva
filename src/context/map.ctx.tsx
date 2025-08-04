@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { GoogleMap, InfoWindow, LoadScript, Marker, GroundOverlay, Polyline } from "@react-google-maps/api";
+import { GoogleMap, InfoWindow, LoadScript, Marker, GroundOverlay, Polyline, Polygon } from "@react-google-maps/api";
 import { Button, Popconfirm, Table } from "antd";
 import { useBoolean } from "ahooks";
 import { Actions } from "ahooks/lib/useBoolean";
@@ -10,6 +10,9 @@ import { createRoot } from "react-dom/client";
 
 import { FirePoint, IRoadClosure, useClosureMarkers, useMapMarkers, useReportMarkers } from "../actions/maker.hook";
 import { OverlayData } from "../components/sidebar/Left";
+import { CustomFirePoint } from "../actions/custom-fires.hook";
+import { ShelterData } from "../app/(home)/shelter/_hook/shelters.hook";
+import { useShelters } from "../actions/shelters.hook";
 type Point = { lat: number; lng: number };
 
 export interface IRoutePath {
@@ -32,6 +35,14 @@ type MapData = {
   route: IRoutePath | null;
   setRoute: (route: IRoutePath | null) => void;
   setTifUrl: (url: string | null) => void;
+
+  currentCustomFire: CustomFirePoint | null;
+  setCurrentCustomFire: (fire: CustomFirePoint | null) => void;
+  currentShelter: ShelterData | null;
+  setCurrentShelter: (shelter: ShelterData | null) => void;
+  showShelters: boolean;
+  setShowShelters: (show: boolean) => void;
+  refreshShelters: () => void;
 };
 const containerStyle = {
   width: "100%",
@@ -68,8 +79,27 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
   const [closureMode, setClosureMode] = useBoolean();
   const { createClosure, closureData, createLoading, delClosure } = useClosureMarkers();
   const [currentClosure, setCurrentClosure] = useState<IRoadClosure | null>(null);
-  const [route, setRoute] = useState<IRoutePath | null>(null);
+  const [route, setRouteState] = useState<IRoutePath | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [currentCustomFire, setCurrentCustomFire] = useState<CustomFirePoint | null>(null);
+  const [currentShelter, setCurrentShelter] = useState<ShelterData | null>(null);
+  const [showShelters, setShowShelters] = useState<boolean>(false);
+  const { shelters, refresh: refreshShelters } = useShelters();
+  // 添加一个强制清除标志
+  const [forceClear, setForceClear] = useState(false);
+  // 自定义setRoute函数，处理强制清除
+  const setRoute = useCallback((newRoute: IRoutePath | null) => {
+    if (newRoute === null) {
+      // 清除路径时，先设置强制清除标志
+      setForceClear(true);
+      setTimeout(() => {
+        setRouteState(null);
+        setForceClear(false);
+      }, 100);
+    } else {
+      setRouteState(newRoute);
+    }
+  }, []);
 
   const onLoad = useCallback((map: google.maps.Map) => {
     // This is just an example of getting and using the map instance!!! don't just blindly copy!
@@ -126,6 +156,86 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
       </InfoWindow>
     );
   }, [currentMarker]);
+
+  const CustomFireInfo = useMemo(() => {
+    if (!currentCustomFire) {
+      return null;
+    }
+
+    const { lat, lng, properties } = currentCustomFire;
+    const data: { key: string; value: string }[] = [];
+
+    data.push({ key: "Object ID", value: properties.OBJECTID.toString() });
+    data.push({ key: "Type", value: properties.type });
+    data.push({ key: "Area", value: `${properties.Shape__Area.toFixed(2)} sq units` });
+    data.push({ key: "Perimeter", value: `${properties.Shape__Length.toFixed(2)} units` });
+    data.push({ key: "Location", value: `${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+
+    return (
+      <InfoWindow
+        options={{ pixelOffset: new window.google.maps.Size(0, -30) }}
+        position={{ lat, lng }}
+        onCloseClick={() => {
+          setCurrentCustomFire(null);
+        }}
+      >
+        <div className="w-[300px] bg-white bg-opacity-85 backdrop-blur-md rounded-lg p-4 shadow-xl border border-white border-opacity-30">
+          <h3 className="text-lg font-bold mb-3 text-red-600 drop-shadow-sm">🔥 Fire Perimeter</h3>
+          <div className="bg-white bg-opacity-40 rounded-md p-2">
+            <Table
+              bordered
+              className="transparent-table"
+              columns={[
+                { title: "Property", dataIndex: "key", key: "key", width: "40%" },
+                { title: "Value", dataIndex: "value", key: "value", width: "60%" },
+              ]}
+              dataSource={data}
+              pagination={false}
+              size="small"
+            />
+          </div>
+        </div>
+      </InfoWindow>
+    );
+  }, [currentCustomFire]);
+
+  const ShelterInfo = useMemo(() => {
+    if (!currentShelter) {
+      return null;
+    }
+
+    const { lat, lng, shelterId, capacity, region } = currentShelter;
+    const data: { key: string; value: string }[] = [];
+
+    data.push({ key: "Shelter ID", value: shelterId });
+    data.push({ key: "Region", value: region.toUpperCase() });
+    data.push({ key: "Capacity", value: `${capacity} people` });
+    data.push({ key: "Location", value: `${lat.toFixed(6)}, ${lng.toFixed(6)}` });
+
+    return (
+      <InfoWindow
+        options={{ pixelOffset: new window.google.maps.Size(0, -30) }}
+        position={{ lat, lng }}
+        onCloseClick={() => {
+          setCurrentShelter(null);
+        }}
+      >
+        <div className="w-[300px]">
+          <h3 className="text-lg font-bold mb-2 text-blue-600">🏠 Emergency Shelter</h3>
+          <Table
+            bordered
+            columns={[
+              { title: "Property", dataIndex: "key", key: "key", width: "40%" },
+              { title: "Value", dataIndex: "value", key: "value", width: "60%" },
+            ]}
+            dataSource={data}
+            pagination={false}
+            size="small"
+          />
+        </div>
+      </InfoWindow>
+    );
+  }, [currentShelter]);
 
   const ClosureInfo = useMemo(() => {
     if (!currentClosure) {
@@ -238,7 +348,87 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
 
     return null;
   }, [overlayData, map, tifUrl]);
+  // 路径版本计数器，用于强制重新渲染
+  const [routeVersion, setRouteVersion] = useState(0);
+  // 存储当前的polyline实例
+  const [polylineInstance, setPolylineInstance] = useState<google.maps.Polyline | null>(null);
 
+  const routeComponents = useMemo(() => {
+    // 如果强制清除或没有路径，返回null确保组件被完全移除
+    if (forceClear || !route) {
+      return null;
+    }
+
+    const path = route.route.map(([lat, lng]) => ({ lat, lng }));
+    const startPoint = { lat: route.start[0], lng: route.start[1] };
+
+    return (
+      <>
+        {/* 路径线 */}
+        <Polyline
+          key={`route-${routeVersion}`}
+          options={{
+            strokeColor: "#FF0000",
+            strokeWeight: 3,
+            strokeOpacity: 0.9,
+            zIndex: 1000,
+          }}
+          path={path}
+          onLoad={(polyline) => {
+            setPolylineInstance(polyline);
+          }}
+          onUnmount={() => {
+            setPolylineInstance(null);
+          }}
+        />
+        {/* 起点用户标记 */}
+        <Marker
+          key={`start-point-${routeVersion}`}
+          icon={{ url: "/user.png", scaledSize: new window.google.maps.Size(42, 42) }}
+          position={startPoint}
+          title="Start Point"
+          zIndex={1001}
+        />
+      </>
+    );
+  }, [route, routeVersion, forceClear]);
+
+  // 自定义火点多边形
+  const customFirePolygon = useMemo(() => {
+    if (!currentCustomFire) {
+      return null;
+    }
+
+    const coordinates = currentCustomFire.geometry.coordinates[0];
+    const path = coordinates.map(([lng, lat]) => ({ lat, lng }));
+
+    return (
+      <Polygon
+        key={`custom-fire-${currentCustomFire.id}`}
+        options={{
+          fillColor: "#FF6600",
+          fillOpacity: 0.3,
+          strokeColor: "#FF6600",
+          strokeWeight: 2,
+          strokeOpacity: 0.8,
+        }}
+        paths={path}
+      />
+    );
+  }, [currentCustomFire]);
+
+  // 当route改变时，更新版本号
+  useEffect(() => {
+    setRouteVersion((prev) => prev + 1);
+  }, [route]);
+
+  // 当强制清除时，直接操作Google Maps API
+  useEffect(() => {
+    if (forceClear && polylineInstance) {
+      polylineInstance.setMap(null);
+      setPolylineInstance(null);
+    }
+  }, [forceClear, polylineInstance]);
   const polyline = useMemo(() => {
     if (!route) {
       return null;
@@ -277,23 +467,55 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [overlayData, map]);
 
-  //  fit逃生路线
+  //  fit逃生路线 - 优化版本
   useEffect(() => {
     if (route && map) {
+      console.log("🔍 开始自动缩放到路径位置...", route);
+
       const path = route.route.map(([lat, lng]) => ({ lat, lng }));
-      //fit
+
+      // 创建边界框包含整个路径
       const bounds = new google.maps.LatLngBounds();
 
       path.forEach(({ lat, lng }) => {
         bounds.extend(new google.maps.LatLng(lat, lng));
       });
-      map.fitBounds(bounds);
+
+      // 添加起点和终点确保完整覆盖
+      bounds.extend(new google.maps.LatLng(route.start[0], route.start[1]));
+      bounds.extend(new google.maps.LatLng(route.destination[0], route.destination[1]));
+
+      console.log("📍 路径边界:", {
+        start: route.start,
+        destination: route.destination,
+        pathPoints: path.length,
+      });
+
+      // 使用动画效果平滑缩放到路径
+      map.fitBounds(bounds, {
+        top: 50, // 顶部边距
+        right: 50, // 右侧边距
+        bottom: 50, // 底部边距
+        left: 50, // 左侧边距
+      });
+
+      // 延迟设置最小缩放级别，避免过度放大
+      setTimeout(() => {
+        const currentZoom = map.getZoom();
+
+        console.log("🔍 当前缩放级别:", currentZoom);
+        if (currentZoom && currentZoom > 16) {
+          console.log("⚠️ 缩放级别过高，调整到16级");
+          map.setZoom(16);
+        }
+      }, 500);
     }
   }, [route, map]);
 
-  // fit到Marker;
+  // fit到Marker - 但不在有路径时触发
   useEffect(() => {
-    if (markers.length > 0 && map) {
+    if (markers.length > 0 && map && !route) {
+      console.log("🔍 自动缩放到火点标记位置...");
       const bounds = new google.maps.LatLngBounds();
 
       markers.forEach(({ lat, lng }) => {
@@ -301,7 +523,7 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
       });
       map.fitBounds(bounds);
     }
-  }, [markers, map]);
+  }, [markers, map, route]);
 
   return (
     <MapContext.Provider
@@ -311,6 +533,13 @@ export const MapProvider = ({ children }: { children: React.ReactNode }) => {
         setCenter,
         currentMarker,
         setCurrentMarker,
+        currentCustomFire,
+        setCurrentCustomFire,
+        currentShelter,
+        setCurrentShelter,
+        showShelters,
+        setShowShelters,
+        refreshShelters,
         map: map!,
         setOverlayData,
         closureMode,

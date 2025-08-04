@@ -35,5 +35,5 @@ export const getUser = async (req: NextRequest): Promise<User | null> => {
     return decoded ? (decoded as User) : null;
   }
 
-  return null;
+  return Promise.reject(null);
 };
