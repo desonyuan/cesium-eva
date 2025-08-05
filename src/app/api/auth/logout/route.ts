@@ -6,5 +6,7 @@ export const GET = async (req: NextRequest) => {
 
   ck.delete("token");
 
-  return NextResponse.redirect("/");
+  return NextResponse.json({
+    statusCode: 200,
+  });
 };

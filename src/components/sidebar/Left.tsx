@@ -45,7 +45,7 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
     setShowShelters,
     setTifUrl,
   } = useMapContext();
-  const { user } = useUser();
+  const { user, logout } = useUser();
   const [showShelterManager, setShowShelterManager] = useBoolean();
 
   const [isModalOpen, setIsModalOpen] = useBoolean();
@@ -185,6 +185,13 @@ const Left: FC<PropsWithChildren<IProps>> = () => {
                 </>
               )}
             </div>
+            {user && (
+              <>
+                <Button type="primary" onClick={logout}>
+                  Log out
+                </Button>
+              </>
+            )}
           </div>
           <Modal
             closable={true}

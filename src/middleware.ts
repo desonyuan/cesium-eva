@@ -10,6 +10,7 @@ export async function middleware(request: NextRequest) {
 
   // 1. 跳过公开路径
   const skip = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
+
   const verify = async () => {
     const res = await fetch(new URL("/api/auth/verify", request.url), {
       method: "POST",
@@ -20,6 +21,7 @@ export async function middleware(request: NextRequest) {
     return res.json();
   };
 
+  console.log(pathname, skip, token, "pathname-----------------");
   if (skip) {
     if (token) {
       try {

@@ -33,9 +33,11 @@ class LocalStore {
     return data ? parse(data) : data;
   }
   remove(key: string): void {
+    this.init();
     this.store.removeItem(key);
   }
   removeAll(): void {
+    this.init();
     this.store.clear();
   }
 }
